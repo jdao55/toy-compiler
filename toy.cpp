@@ -6,6 +6,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace token{
@@ -76,4 +77,110 @@ static int gettok()
     int current_char = last_char;
     last_char = getchar();
     return current_char;
+}
+
+//
+class ExprAST
+{
+  public:
+    virtual ~ExprAST() {}
+};
+
+class NumberExprAST :public ExprAST
+{
+    double val;
+  public:
+    NumberExprAST(double _val) : val(_val){}
+};
+
+class VariableExprAST :public ExprAST
+{
+    std::string name;
+  public:
+    VariableExprAST(std::string &_val) : name(_val){}
+    VariableExprAST(std::string &&_val) : name(_val){}
+};
+
+class BinaryExprAST : public ExprAST {
+  char Op;
+  std::unique_ptr<ExprAST> LHS, RHS;
+
+public:
+  BinaryExprAST(char op,
+                std::unique_ptr<ExprAST> LHS,
+                std::unique_ptr<ExprAST> RHS)
+    : Op(op),
+      LHS(std::move(LHS)),
+      RHS(std::move(RHS)) {}
+};
+
+/// CallExprAST - Expression class for function calls.
+class CallExprAST : public ExprAST {
+  std::string Callee;
+  std::vector<std::unique_ptr<ExprAST>> Args;
+
+public:
+  CallExprAST(const std::string &Callee,
+              std::vector<std::unique_ptr<ExprAST>> Args)
+    : Callee(Callee), Args(std::move(Args)) {}
+};
+
+class PrototypeAST {
+  std::string Name;
+  std::vector<std::string> Args;
+
+public:
+  PrototypeAST(const std::string &name, std::vector<std::string> &Args)
+    : Name(name), Args(std::move(Args)) {}
+
+  const std::string &getName() const { return Name; }
+};
+
+/// FunctionAST - This class represents a function definition itself.
+class FunctionAST {
+  std::unique_ptr<PrototypeAST> Proto;
+  std::unique_ptr<ExprAST> Body;
+
+public:
+  FunctionAST(std::unique_ptr<PrototypeAST> Proto,
+              std::unique_ptr<ExprAST> Body)
+    : Proto(std::move(Proto)), Body(std::move(Body)) {}
+};
+
+static int CurTok;
+static int getNextToken() {
+  return CurTok = gettok();
+}
+
+
+std::unique_ptr<ExprAST> LogError(const char * Str)
+{
+  fprintf(stderr, "LogError: %s\n", Str);
+  return nullptr;
+}
+std::unique_ptr<PrototypeAST> LogErrorP(const char *Str)
+{
+  LogError(Str);
+  return nullptr;
+}
+
+
+static std::unique_ptr<ExprAST> ParseNumberExpr()
+{
+  auto Result = std::make_unique<NumberExprAST>(num_val);
+  getNextToken(); // consume the number
+  return std::move(Result);
+}
+
+/// parenexpr ::= '(' expression ')'
+static std::unique_ptr<ExprAST> ParseParenExpr() {
+  getNextToken(); // eat (.
+  auto V = ParseExpression();
+  if (!V)
+    return nullptr;
+
+  if (CurTok != ')')
+    return LogError("expected ')'");
+  getNextToken(); // eat ).
+  return V;
 }

@@ -210,7 +210,7 @@ static std::unique_ptr<ExprAST> ParseNumberExpr()
 {
     auto Result = std::make_unique<NumberExprAST>(num_val);
     getNextToken(); // consume the number
-    return std::move(Result);
+    return Result;
 }
 
 /// parenexpr ::= '(' expression ')'
@@ -566,24 +566,24 @@ static void MainLoop()
 {
     while (true)
     {
-        fprintf(stderr, "ready> ");
-        switch (CurTok)
-        {
-            case token::eof:
-                return;
-            case ';': // ignore top-level semicolons.
-                getNextToken();
-                break;
-            case token::def:
-                HandleDefinition();
-                break;
-            case token::tok_extern:
-                HandleExtern();
-                break;
-            default:
-                HandleTopLevelExpression();
-                break;
-        }
+      fprintf(stderr, "ready> ");
+      switch (CurTok)
+      {
+        case token::eof:
+          return;
+        case ';': // ignore top-level semicolons.
+          getNextToken();
+          break;
+        case token::def:
+          HandleDefinition();
+          break;
+        case token::tok_extern:
+          HandleExtern();
+          break;
+        default:
+          HandleTopLevelExpression();
+          break;
+      }
     }
 }
 
@@ -591,19 +591,25 @@ static void MainLoop()
 
 int main()
 {
-    // Install standard binary operators.
-    // 1 is lowest precedence.
-    BinopPrecedence['<'] = 10;
-    BinopPrecedence['+'] = 20;
-    BinopPrecedence['-'] = 20;
-    BinopPrecedence['*'] = 40; // highest.
+  // Install standard binary operators.
+  // 1 is lowest precedence.
+  BinopPrecedence['<'] = 10;
+  BinopPrecedence['+'] = 20;
+  BinopPrecedence['-'] = 20;
+  BinopPrecedence['*'] = 40; // highest.
 
-    // Prime the first token.
-    fprintf(stderr, "ready> ");
-    getNextToken();
+  // Prime the first token.
+  fprintf(stderr, "ready> ");
+  getNextToken();
 
-    // Run the main "interpreter loop" now.
-    MainLoop();
+  TheModule = std::make_unique<Module>("my cool jit", TheContext);
 
-    return 0;
+  // Run the main "interpreter loop" now.
+  MainLoop();
+
+  // Print out all of the generated code.
+  TheModule->print(errs(), nullptr);
+
+  return 0;
+
 }

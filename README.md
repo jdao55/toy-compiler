@@ -1,2 +1,2 @@
 # toy-compiler
-A toy compiler based on this llvm guide https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/index.html
+A toy compiler based llvm's guide https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/index.html

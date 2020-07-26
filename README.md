@@ -1,2 +1,2 @@
 # toy-compiler
-compiler for Kaleidoscope, based on llvm guide https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/index.html
+A toy compiler based llvm's guide https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/index.html

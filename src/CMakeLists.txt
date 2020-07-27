@@ -1,8 +1,5 @@
-
 add_executable(toycompiler toy.cpp)
 
-llvm_map_components_to_libnames(llvm_libs core support target irreader)
-
 # Link against LLVM libraries
-target_link_libraries(toycompiler LLVM)
+target_link_libraries(toycompiler PRIVATE LLVM project_options project_warnings)
 message(STATUS "LLVM linked to: ${llvm_libs}")

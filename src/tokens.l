@@ -1,35 +1,36 @@
+%option noyywrap
+
 %{
 #include <string>
-#include "node.h"
-#include "parser.hpp"
-#define SAVE_TOKEN yylval.string = new std::string(yytext, yyleng)
-#define TOKEN(t) (yylval.token = t)
-extern "C" int yywrap() { }
+#include "token.hpp"
+
 %}
 
 %%
 
 [ \t\n]                 ;
-[a-zA-Z_][a-zA-Z0-9_]*  SAVE_TOKEN; return TIDENTIFIER;
-[0-9]+.[0-9]*           SAVE_TOKEN; return TDOUBLE;
-[0-9]+                  SAVE_TOKEN; return TINTEGER;
-"="                     return TOKEN(TEQUAL);
-"=="                    return TOKEN(TCEQ);
-"!="                    return TOKEN(TCNE);
-"<"                     return TOKEN(TCLT);
-"<="                    return TOKEN(TCLE);
-">"                     return TOKEN(TCGT);
-">="                    return TOKEN(TCGE);
-"("                     return TOKEN(TLPAREN);
-")"                     return TOKEN(TRPAREN);
-"{"                     return TOKEN(TLBRACE);
-"}"                     return TOKEN(TRBRACE);
-"."                     return TOKEN(TDOT);
-","                     return TOKEN(TCOMMA);
-"+"                     return TOKEN(TPLUS);
-"-"                     return TOKEN(TMINUS);
-"*"                     return TOKEN(TMUL);
-"/"                     return TOKEN(TDIV);
-.                       printf("Unknown token!n"); yyterminate();
+[a-zA-Z_][a-zA-Z0-9_]*  return identifier;
+[0-9]+.[0-9]*           return floating_point;
+[0-9]+                  return integer ;
+"="                     return equal ;
+"=="                    return eequals ;
+"!="                    return notequals;
+"<"                     return less_than;
+"<="                    return less_than_eq;
+">"                     return greater_than;
+">="                    return greater_than_eq;
+"("                     return left_bracket ;
+")"                     return right_bracket;
+"{"                     return left_cbracket;
+"}"                     return right_cbracket;
+"."                     return identifier;
+","                     return comma;
+"+"                     return plus;
+"-"                     return minus;
+"*"                     return mult;
+"/"                     return fwdslash;
+";"                     return semi;
+<<EOF>>                 printf("error on tok%s\n", YYText());return tokens_t::eof;                       ;
+.                       yyterminate();
 
 %%

@@ -1,36 +1,57 @@
 #ifndef __TOKEN_H_
 #define __TOKEN_H_
 #include <string>
-enum tokens_t {
-  eof = 0,
-  equal,
-  eequals,
-  notequals,
-  less_than,
-  greater_than,
-  less_than_eq,
-  greater_than_eq,
-  identifier,
-  integer,
-  floating_point,
-  left_bracket,
-  right_bracket,
-  left_cbracket,
-  right_cbracket,
-  plus,
-  minus,
-  mult,
-  fwdslash,
-  comma,
-  semi
+enum token_t {
+    tok_eof = 0,
+
+    // commands
+    tok_def = -2,
+    tok_extern = -3,
+
+    // primary
+    tok_identifier = -4,
+    tok_number = -5,
+
+    // control
+    tok_if = -6,
+    tok_then = -7,
+    tok_else = -8,
+    tok_for = -9,
+    tok_in = -10,
+
+    // user defined operators
+    tok_binary = -11,
+    tok_unary = -12,
+
+    // var definition
+    tok_var = -13,
+
+    // assignment op
+    tok_equal = -14,
+
+    // brakets commas, and semis
+    tok_leftbracket = -15,
+    tok_rightbracket = -16,
+    tok_comma = -17,
+    tok_semi = -18,
+
+    // operators
+    tok_binop = -19
+
+
 };
 
-struct token {
-  tokens_t type;
-  std::string text;
-  token(tokens_t t, const std::string &s) : type(t), text(s) {}
+struct token
+{
+    token_t type;
+    std::string text;
+    token(token_t t, const std::string &s) : type(t), text(s) {}
 
-  explicit token(tokens_t t) : type(t) {}
+    explicit token(token_t t) : type(t) {}
+
+
+    bool operator==(const token_t tok) const { return type == tok; }
+    bool operator!=(const token_t tok) const { return type != tok; }
 };
 
-#endif // __TOKEN_H_
+#endif// __TOKEN_H_

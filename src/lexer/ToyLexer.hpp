@@ -32,7 +32,11 @@ class ToyLexer
         tokenlist.clear();
         yyFlexLexer lexer;
         int t;
-        while ((t = lexer.yylex()) != 0) { tokenlist.emplace_back(static_cast<token_t>(t), lexer.YYText()); }
+        while ((t = lexer.yylex()) != 0)
+        {
+            std::optional<double> dval = t == token_t::tok_number ? std::stod(lexer.YYText()) : std::nullopt;
+            tokenlist.emplace_back(static_cast<token_t>(t), lexer.YYText(), dval);
+        }
         tok_iter = tokenlist.begin();
     }
     void scan_tokens(std::istream is)
@@ -41,7 +45,11 @@ class ToyLexer
         yyFlexLexer lexer;
         lexer.switch_streams(is, std::cout);
         int t;
-        while ((t = lexer.yylex()) != 0) { tokenlist.emplace_back(static_cast<token_t>(t), lexer.YYText()); }
+        while ((t = lexer.yylex()) != 0)
+        {
+            std::optional<double> dval = t == token_t::tok_number ? std::stod(lexer.YYText()) : std::nullopt;
+            tokenlist.emplace_back(static_cast<token_t>(t), lexer.YYText(), dval);
+        }
         tok_iter = tokenlist.begin();
     }
     auto begin() { return tokenlist.begin(); }

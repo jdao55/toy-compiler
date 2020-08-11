@@ -1,6 +1,7 @@
 #ifndef __TOKEN_H_
 #define __TOKEN_H_
 #include <string>
+#include <optional>
 enum token_t {
     tok_eof = 0,
 
@@ -45,7 +46,8 @@ struct token
 {
     token_t type;
     std::string text;
-    token(token_t t, const std::string &s) : type(t), text(s) {}
+    std::optional<double> num_val = std::nullopt;
+    token(token_t t, const std::string &s, std::optional<double> d) : type(t), text(s) num_val(d) {}
 
     explicit token(token_t t) : type(t) {}
 

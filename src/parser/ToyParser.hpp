@@ -2,6 +2,7 @@
 
 #define TOY_PARSER_HPP
 #include <fmt/format.h>
+#include <map>
 #include "../lexer/ToyLexer.hpp"
 #include "../AST/AST.hpp"
 class ToyParser
@@ -10,7 +11,11 @@ class ToyParser
     ToyLexer lexer;
     /// BinopPrecedence - This holds the precedence for each binary operator that is
     /// defined.
-    static std::map<std::string, int> BinopPrecedence;
+    static std::map<std::string, int> BinopPrecedence{ { "<", 10 }, { "+", 20 }, { "-", 20 }, { "*", 40 } };
+    using ExprAST_ptr = std::unique_ptr<ExprAST>;
+    using ProtoAST_ptr = std::unique_ptr<PrototypeAST>;
+    using FunctionAST_ptr = std::unique_ptr<FunctionAST>;
+    std::vector<std::variant<ExptrAST_ptr, ProtoAST_ptr, FunctionAST_ptr>> > top_expressions;
 
   public:
     /// GetTokPrecedence - Get the precedence of the pending binary operator token.
@@ -381,6 +386,79 @@ class ToyParser
     {
         getNextToken();// eat extern.
         return ParsePrototype();
+    }
+
+
+    void HandleDefinition()
+    {
+        if (auto FnAST = ParseDefinition())
+        {
+            if (auto *FnIR = FnAST->codegen())
+            {
+                fprintf(stderr, "Read function definition:");
+                FnIR->print(errs());
+                fprintf(stderr, "\n");
+            }
+        }
+        else
+        {
+            // Skip token for error recovery.
+            getNextToken();
+        }
+    }
+
+    void HandleExtern()
+    {
+        if (auto ProtoAST = ParseExtern())
+        {
+            if (auto *FnIR = ProtoAST->codegen())
+            {
+                fprintf(stderr, "Read extern: ");
+                FnIR->print(errs());
+                fprintf(stderr, "\n");
+                FunctionProtos[ProtoAST->getName()] = std::move(ProtoAST);
+            }
+        }
+        else
+        {
+            // Skip token for error recovery.
+            getNextToken();
+        }
+    }
+
+    void HandleTopLevelExpression()
+    {
+        // Evaluate a top-level expression into an anonymous function.
+        if (auto FnAST = ParseTopLevelExpr()) { FnAST->codegen(); }
+        else
+        {
+            // Skip token for error recovery.
+            getNextToken();
+        }
+    }
+
+    void MainLoop()
+    {
+        while (true)
+        {
+            switch (CurTok)
+            {
+            case tok_eof:
+                return;
+            case ';':// ignore top-level semicolons.
+                getNextToken();
+                break;
+            case tok_def:
+                HandleDefinition();
+                break;
+            case tok_extern:
+                HandleExtern();
+                break;
+            default:
+                HandleTopLevelExpression();
+                break;
+            }
+        }
     }
 };
 

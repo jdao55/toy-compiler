@@ -13,7 +13,16 @@ class ExprAST
     virtual llvm::Value *codegen(CodeModule &code_module) = 0;
 };
 
-/// NumberExprAST - Expression class for numeric literals like "1.0".
+
+class FnAST
+{
+  public:
+    virtual ~ExprAST() = default;
+
+    virtual llvm::Function *codegen(CodeModule &code_module) = 0;
+};
+
+// NumberExprAST - Expression class for numeric literals like "1.0".
 class NumberExprAST : public ExprAST
 {
     double Val;
@@ -125,12 +134,12 @@ class VarExprAST : public ExprAST
 /// PrototypeAST - This class represents the "prototype" for a function,
 /// which captures its name, and its argument names (thus implicitly the number
 /// of arguments the function takes), as well as if it is an operator.
-class PrototypeAST
+class PrototypeAST : public FnAST
 {
     std::string Name;
     std::vector<std::string> Args;
     bool IsOperator;
-    unsigned Precedence;// Precedence if a binary op.
+    uint32_t Precedence;// Precedence if a binary op.
 
   public:
     PrototypeAST(const std::string &Name, std::vector<std::string> Args, bool IsOperator = false, unsigned Prec = 0)
@@ -149,11 +158,11 @@ class PrototypeAST
         return Name[Name.size() - 1];
     }
 
-    unsigned getBinaryPrecedence() const { return Precedence; }
+    uint32_t getBinaryPrecedence() const { return Precedence; }
 };
 
 /// FunctionAST - This class represents a function definition itself.
-class FunctionAST
+class FunctionAST : public FnAST
 {
     std::unique_ptr<PrototypeAST> Proto;
     std::unique_ptr<ExprAST> Body;

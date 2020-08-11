@@ -5,17 +5,18 @@
 #include <map>
 #include "../lexer/ToyLexer.hpp"
 #include "../AST/AST.hpp"
+
+
 class ToyParser
 {
+
   private:
     ToyLexer lexer;
     /// BinopPrecedence - This holds the precedence for each binary operator that is
     /// defined.
     static std::map<std::string, int> BinopPrecedence{ { "<", 10 }, { "+", 20 }, { "-", 20 }, { "*", 40 } };
     using ExprAST_ptr = std::unique_ptr<ExprAST>;
-    using ProtoAST_ptr = std::unique_ptr<PrototypeAST>;
-    using FunctionAST_ptr = std::unique_ptr<FunctionAST>;
-    std::vector<std::variant<ExptrAST_ptr, ProtoAST_ptr, FunctionAST_ptr>> > top_expressions;
+    using FnAST_ptr = std::unique_ptr<FnAST>;
 
   public:
     /// GetTokPrecedence - Get the precedence of the pending binary operator token.
@@ -44,19 +45,19 @@ class ToyParser
     std::unique_ptr<ExprAST> ParseNumberExpr()
     {
         auto Result = std::make_unique<NumberExprAST>(NumVal);
-        getNextToken();// consume the number
+        lexer.next_token();// consume the number
         return std::move(Result);
     }
 
     /// parenexpr ::= '(' expression ')'
     std::unique_ptr<ExprAST> ParseParenExpr()
     {
-        getNextToken();// eat (.
+        lexer.next_token();// eat (.
         auto V = ParseExpression();
         if (!V) return nullptr;
 
         if (lexer.current_token() != tok_rightbracket) return LogError("expected ')'");
-        getNextToken();// eat ).
+        lexer.next_token();// eat ).
         return V;
     }
 
@@ -67,13 +68,13 @@ class ToyParser
     {
         std::string IdName = IdentifierStr;
 
-        getNextToken();// eat identifier.
+        lexer.next_token();// eat identifier.
 
         if (lexer.current_token() != tok_leftbracket)// Simple variable ref.
             return std::make_unique<VariableExprAST>(IdName);
 
         // Call.
-        getNextToken();// eat (
+        lexer.next_token();// eat (
         std::vector<std::unique_ptr<ExprAST>> Args;
         if (lexer.current_token() != tok_rightbracket)
         {
@@ -87,12 +88,12 @@ class ToyParser
                 if (lexer.current_token() == tok_rightbracket) break;
 
                 if (lexer.current_token() != tok_comma) return LogError("Expected ')' or ',' in argument list");
-                getNextToken();
+                lexer.next_token();
             }
         }
 
         // Eat the ')'.
-        getNextToken();
+        lexer.next_token();
 
         return std::make_unique<CallExprAST>(IdName, std::move(Args));
     }
@@ -100,21 +101,21 @@ class ToyParser
     /// ifexpr ::= 'if' expression 'then' expression 'else' expression
     std::unique_ptr<ExprAST> ParseIfExpr()
     {
-        getNextToken();// eat the if.
+        lexer.next_token();// eat the if.
 
         // condition.
         auto Cond = ParseExpression();
         if (!Cond) return nullptr;
 
         if (lexer.current_token() != tok_then) return LogError("expected then");
-        getNextToken();// eat the then
+        lexer.next_token();// eat the then
 
         auto Then = ParseExpression();
         if (!Then) return nullptr;
 
         if (lexer.current_token() != tok_else) return LogError("expected else");
 
-        getNextToken();
+        lexer.next_token();
 
         auto Else = ParseExpression();
         if (!Else) return nullptr;
@@ -125,20 +126,20 @@ class ToyParser
     /// forexpr ::= 'for' identifier '=' expr ',' expr (',' expr)? 'in' expression
     std::unique_ptr<ExprAST> ParseForExpr()
     {
-        getNextToken();// eat the for.
+        lexer.next_token();// eat the for.
 
         if (lexer.current_token() != tok_identifier) return LogError("expected identifier after for");
 
         std::string IdName = IdentifierStr;
-        getNextToken();// eat identifier.
+        lexer.next_token();// eat identifier.
 
         if (lexer.current_token() != tok_equal) return LogError("expected '=' after for");
-        getNextToken();// eat '='.
+        lexer.next_token();// eat '='.
 
         auto Start = ParseExpression();
         if (!Start) return nullptr;
         if (lexer.current_token() != tok_comma) return LogError("expected ',' after for start value");
-        getNextToken();
+        lexer.next_token();
 
         auto End = ParseExpression();
         if (!End) return nullptr;
@@ -147,13 +148,13 @@ class ToyParser
         std::unique_ptr<ExprAST> Step;
         if (lexer.current_token() == tok_comma)
         {
-            getNextToken();
+            lexer.next_token();
             Step = ParseExpression();
             if (!Step) return nullptr;
         }
 
         if (lexer.current_token() != tok_in) return LogError("expected 'in' after for");
-        getNextToken();// eat 'in'.
+        lexer.next_token();// eat 'in'.
 
         auto Body = ParseExpression();
         if (!Body) return nullptr;
@@ -165,7 +166,7 @@ class ToyParser
     //                    (',' identifier ('=' expression)?)* 'in' expression
     std::unique_ptr<ExprAST> ParseVarExpr()
     {
-        getNextToken();// eat the var.
+        lexer.next_token();// eat the var.
 
         std::vector<std::pair<std::string, std::unique_ptr<ExprAST>>> VarNames;
 
@@ -175,13 +176,13 @@ class ToyParser
         while (true)
         {
             std::string Name = IdentifierStr;
-            getNextToken();// eat identifier.
+            lexer.next_token();// eat identifier.
 
             // Read the optional initializer.
             std::unique_ptr<ExprAST> Init = nullptr;
             if (lexer.current_token() == tok_equal)
             {
-                getNextToken();// eat the '='.
+                lexer.next_token();// eat the '='.
 
                 Init = ParseExpression();
                 if (!Init) return nullptr;
@@ -191,14 +192,14 @@ class ToyParser
 
             // End of var list, exit loop.
             if (lexer.current_token() != tok_equal) break;
-            getNextToken();// eat the ','.
+            lexer.next_token();// eat the ','.
 
             if (lexer.current_token() != tok_identifier) return LogError("expected identifier list after var");
         }
 
         // At this point, we have to have 'in'.
         if (lexer.current_token() != tok_in) return LogError("expected 'in' keyword after 'var'");
-        getNextToken();// eat 'in'.
+        lexer.next_token();// eat 'in'.
 
         auto Body = ParseExpression();
         if (!Body) return nullptr;
@@ -246,7 +247,7 @@ class ToyParser
 
         // If this is a unary operator, read it.
         int Opc = lexer.current_token();
-        getNextToken();
+        lexer.next_token();
         if (auto Operand = ParseUnary()) return std::make_unique<UnaryExprAST>(Opc, std::move(Operand));
         return nullptr;
     }
@@ -266,7 +267,7 @@ class ToyParser
 
             // Okay, we know this is a binop.
             int BinOp = lexer.current_token();
-            getNextToken();// eat binop
+            lexer.next_token();// eat binop
 
             // Parse the unary expression after the binary operator.
             auto RHS = ParseUnary();
@@ -315,30 +316,30 @@ class ToyParser
         case tok_identifier:
             FnName = IdentifierStr;
             Kind = 0;
-            getNextToken();
+            lexer.next_token();
             break;
         case tok_unary:
-            getNextToken();
+            lexer.next_token();
             if (!isascii(lexer.current_token())) return LogErrorP("Expected unary operator");
             FnName = "unary";
             FnName += lexer.current_token();
             Kind = 1;
-            getNextToken();
+            lexer.next_token();
             break;
         case tok_binary:
-            getNextToken();
+            lexer.next_token();
             if (!isascii(lexer.current_token())) return LogErrorP("Expected binary operator");
             FnName = "binary";
             FnName += lexer.current_token();
             Kind = 2;
-            getNextToken();
+            lexer.next_token();
 
             // Read the precedence if present.
             if (lexer.current_token() == tok_number)
             {
                 if (NumVal < 1 || NumVal > 100) return LogErrorP("Invalid precedence: must be 1..100");
                 BinaryPrecedence = static_cast<unsigned>(NumVal);
-                getNextToken();
+                lexer.next_token();
             }
             break;
         }
@@ -346,11 +347,11 @@ class ToyParser
         if (lexer.current_token() != tok_rightbracket) return LogErrorP("Expected '(' in prototype");
 
         std::vector<std::string> ArgNames;
-        while (getNextToken() == tok_identifier) ArgNames.push_back(IdentifierStr);
+        while (lexer.next_token() == tok_identifier) ArgNames.push_back(IdentifierStr);
         if (lexer.current_token() != tok_rightbracket) return LogErrorP("Expected ')' in prototype");
 
         // success.
-        getNextToken();// eat ')'.
+        lexer.next_token();// eat ')'.
 
         // Verify right number of names for operator.
         if (Kind && ArgNames.size() != Kind) return LogErrorP("Invalid number of operands for operator");
@@ -361,7 +362,7 @@ class ToyParser
     /// definition ::= 'def' prototype expression
     std::unique_ptr<FunctionAST> ParseDefinition()
     {
-        getNextToken();// eat def.
+        lexer.next_token();// eat def.
         auto Proto = ParsePrototype();
         if (!Proto) return nullptr;
 
@@ -384,81 +385,89 @@ class ToyParser
     /// external ::= 'extern' prototype
     std::unique_ptr<PrototypeAST> ParseExtern()
     {
-        getNextToken();// eat extern.
+        lexer.next_token();// eat extern.
         return ParsePrototype();
     }
-
-
-    void HandleDefinition()
+    /*********************
+    ** toplevel parsing
+    **********************/
+    FnAST_ptr HandleDefinition()
     {
-        if (auto FnAST = ParseDefinition())
+        if (auto FunAST = ParseDefinition())
         {
-            if (auto *FnIR = FnAST->codegen())
-            {
-                fprintf(stderr, "Read function definition:");
-                FnIR->print(errs());
-                fprintf(stderr, "\n");
-            }
+            return FunAST;
+            //     if (auto *FnIR = FnAST->codegen())
+            //     {
+            //         fprintf(stderr, "Read function definition:");
+            //         FnIR->print(errs());
+            //         fprintf(stderr, "\n");
+            //     }
         }
         else
         {
             // Skip token for error recovery.
-            getNextToken();
+            lexer.next_token();
+            return FunAST;
         }
     }
 
-    void HandleExtern()
+    FnAST_ptr HandleExtern()
     {
         if (auto ProtoAST = ParseExtern())
         {
-            if (auto *FnIR = ProtoAST->codegen())
+            /*
+             * if (auto *FnIR = ProtoAST->codegen())
             {
                 fprintf(stderr, "Read extern: ");
                 FnIR->print(errs());
                 fprintf(stderr, "\n");
                 FunctionProtos[ProtoAST->getName()] = std::move(ProtoAST);
             }
+            */
         }
         else
         {
             // Skip token for error recovery.
-            getNextToken();
+            lexer.next_token();
         }
     }
 
-    void HandleTopLevelExpression()
+    FnAST_ptr HandleTopLevelExpression()
     {
         // Evaluate a top-level expression into an anonymous function.
-        if (auto FnAST = ParseTopLevelExpr()) { FnAST->codegen(); }
+        if (auto FunAST = ParseTopLevelExpr()) { return FunAST; }
         else
         {
             // Skip token for error recovery.
-            getNextToken();
+            lexer.next_token();
+            return FunAST;
         }
     }
 
-    void MainLoop()
+    auto MainLoop()
     {
-        while (true)
+        std::vector<std::variant<ExprAST_ptr, FnAST_ptr>> top_expressions;
+        while (lexer.current_token() != tok_eof)
         {
-            switch (CurTok)
+            switch (lexer.current_token())
             {
             case tok_eof:
-                return;
-            case ';':// ignore top-level semicolons.
-                getNextToken();
+                break;
+            case tok_semi:// ignore top-level semicolons.
+                lexer.next_token();
                 break;
             case tok_def:
-                HandleDefinition();
+                top_expression.push_back(HandleDefinition());
                 break;
             case tok_extern:
-                HandleExtern();
+                top_expression.push_back(HandleExtern());
                 break;
             default:
-                HandleTopLevelExpression();
+                top_expression.push_back(HandleTopLevelExpression());
                 break;
             }
         }
+        return top_expressions;
     }
 };
 

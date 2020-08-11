@@ -58,7 +58,7 @@ llvm::Value *UnaryExprAST::codegen(CodeModule &code_module)
 llvm::Value *BinaryExprAST::codegen(CodeModule &code_module)
 {
     // Special case '=' because we don't want to emit the LHS as an expression.
-    if (Op == "=")
+    if (Op == '=')
     {
         // Assignment requires the LHS to be an identifier.
         // This assume we're building without RTTI because LLVM builds that way by

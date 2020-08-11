@@ -2,37 +2,38 @@
 #define AST_HPP
 
 #include "llvm/IR/Function.h"
+#include "llvm/IR/Instructions.h"
+#include "../codegen/codegen.hpp"
 /// ExprAST - Base class for all expression nodes.
 class ExprAST
 {
   public:
     virtual ~ExprAST() = default;
 
-    virtual llvm::Value *codegen() = 0;
+    virtual llvm::Value *codegen(CodeModule &code_module) = 0;
 };
 
 /// NumberExprAST - Expression class for numeric literals like "1.0".
 class NumberExprAST : public ExprAST
 {
     double Val;
-    ToyLexer &lexer;
+
 
   public:
-    NumberExprAST(double Val) : Val(Val) {}
+    explicit NumberExprAST(double Val) : Val(Val) {}
 
-    llvm::Value *codegen() override;
+    llvm::Value *codegen(CodeModule &code_module) override;
 };
 
 /// VariableExprAST - Expression class for referencing a variable, like "a".
 class VariableExprAST : public ExprAST
 {
     std::string Name;
-    ToyLexer &lexer;
 
   public:
-    VariableExprAST(const std::string &Name) : Name(Name) {}
+    explicit VariableExprAST(const std::string &Name) : Name(Name) {}
 
-    llvm::Value *codegen() override;
+    llvm::Value *codegen(CodeModule &code_module) override;
     const std::string &getName() const { return Name; }
 };
 
@@ -40,20 +41,18 @@ class VariableExprAST : public ExprAST
 class UnaryExprAST : public ExprAST
 {
     char Opcode;
-    ToyLexer &lexer;
     std::unique_ptr<ExprAST> Operand;
 
   public:
     UnaryExprAST(char Opcode, std::unique_ptr<ExprAST> Operand) : Opcode(Opcode), Operand(std::move(Operand)) {}
 
-    llvm::Value *codegen() override;
+    llvm::Value *codegen(CodeModule &code_module) override;
 };
 
 /// BinaryExprAST - Expression class for a binary operator.
 class BinaryExprAST : public ExprAST
 {
     char Op;
-    ToyLexer &lexer;
     std::unique_ptr<ExprAST> LHS, RHS;
 
   public:
@@ -61,14 +60,13 @@ class BinaryExprAST : public ExprAST
         : Op(Op), LHS(std::move(LHS)), RHS(std::move(RHS))
     {}
 
-    llvm::Value *codegen() override;
+    llvm::Value *codegen(CodeModule &code_module) override;
 };
 
 /// CallExprAST - Expression class for function calls.
 class CallExprAST : public ExprAST
 {
     std::string Callee;
-    ToyLexer &lexer;
     std::vector<std::unique_ptr<ExprAST>> Args;
 
   public:
@@ -76,7 +74,7 @@ class CallExprAST : public ExprAST
         : Callee(Callee), Args(std::move(Args))
     {}
 
-    llvm::Value *codegen() override;
+    llvm::Value *codegen(CodeModule &code_module) override;
 };
 
 /// IfExprAST - Expression class for if/then/else.
@@ -89,7 +87,7 @@ class IfExprAST : public ExprAST
         : Cond(std::move(Cond)), Then(std::move(Then)), Else(std::move(Else))
     {}
 
-    llvm::Value *codegen() override;
+    llvm::Value *codegen(CodeModule &code_module) override;
 };
 
 /// ForExprAST - Expression class for for/in.
@@ -107,7 +105,7 @@ class ForExprAST : public ExprAST
         : VarName(VarName), Start(std::move(Start)), End(std::move(End)), Step(std::move(Step)), Body(std::move(Body))
     {}
 
-    llvm::Value *codegen() override;
+    llvm::Value *codegen(CodeModule &code_module) override;
 };
 
 /// VarExprAST - Expression class for var/in
@@ -121,7 +119,7 @@ class VarExprAST : public ExprAST
         : VarNames(std::move(VarNames)), Body(std::move(Body))
     {}
 
-    llvm::Value *codegen() override;
+    llvm::Value *codegen(CodeModule &code_module) override;
 };
 
 /// PrototypeAST - This class represents the "prototype" for a function,
@@ -139,7 +137,7 @@ class PrototypeAST
         : Name(Name), Args(std::move(Args)), IsOperator(IsOperator), Precedence(Prec)
     {}
 
-    llvm::Function *codegen();
+    llvm::Function *codegen(CodeModule &code_module);
     const std::string &getName() const { return Name; }
 
     bool isUnaryOp() const { return IsOperator && Args.size() == 1; }
@@ -165,7 +163,7 @@ class FunctionAST
         : Proto(std::move(Proto)), Body(std::move(Body))
     {}
 
-    llvm::Function *codegen();
+    llvm::Function *codegen(CodeModule &code_module);
 };
 
 #endif

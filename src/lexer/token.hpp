@@ -47,7 +47,7 @@ struct token
     token_t type;
     std::string text;
     std::optional<double> num_val = std::nullopt;
-    token(token_t t, const std::string &s, std::optional<double> d) : type(t), text(s) num_val(d) {}
+    token(token_t t, const std::string &s, std::optional<double> d) : type(t), text(s), num_val(d) {}
 
     explicit token(token_t t) : type(t) {}
 

@@ -9,7 +9,6 @@ class ExprAST
 {
   public:
     virtual ~ExprAST() = default;
-
     virtual llvm::Value *codegen(CodeModule &code_module) = 0;
 };
 
@@ -17,7 +16,7 @@ class ExprAST
 class FnAST
 {
   public:
-    virtual ~ExprAST() = default;
+    virtual ~FnAST() = default;
 
     virtual llvm::Function *codegen(CodeModule &code_module) = 0;
 };
@@ -29,7 +28,7 @@ class NumberExprAST : public ExprAST
 
 
   public:
-    explicit NumberExprAST(double Val) : Val(Val) {}
+    explicit NumberExprAST(double _val) : Val(_val) {}
 
     llvm::Value *codegen(CodeModule &code_module) override;
 };
@@ -40,7 +39,7 @@ class VariableExprAST : public ExprAST
     std::string Name;
 
   public:
-    explicit VariableExprAST(const std::string &Name) : Name(Name) {}
+    explicit VariableExprAST(const std::string &_name) : Name(_name) {}
 
     llvm::Value *codegen(CodeModule &code_module) override;
     const std::string &getName() const { return Name; }
@@ -53,7 +52,7 @@ class UnaryExprAST : public ExprAST
     std::unique_ptr<ExprAST> Operand;
 
   public:
-    UnaryExprAST(char Opcode, std::unique_ptr<ExprAST> Operand) : Opcode(Opcode), Operand(std::move(Operand)) {}
+    UnaryExprAST(char _opcode, std::unique_ptr<ExprAST> _operand) : Opcode(_opcode), Operand(std::move(_operand)) {}
 
     llvm::Value *codegen(CodeModule &code_module) override;
 };
@@ -65,8 +64,8 @@ class BinaryExprAST : public ExprAST
     std::unique_ptr<ExprAST> LHS, RHS;
 
   public:
-    BinaryExprAST(char Op, std::unique_ptr<ExprAST> LHS, std::unique_ptr<ExprAST> RHS)
-        : Op(Op), LHS(std::move(LHS)), RHS(std::move(RHS))
+    BinaryExprAST(char _op, std::unique_ptr<ExprAST> _lhs, std::unique_ptr<ExprAST> _rhs)
+        : Op(_op), LHS(std::move(_lhs)), RHS(std::move(_rhs))
     {}
 
     llvm::Value *codegen(CodeModule &code_module) override;
@@ -79,8 +78,8 @@ class CallExprAST : public ExprAST
     std::vector<std::unique_ptr<ExprAST>> Args;
 
   public:
-    CallExprAST(const std::string &Callee, std::vector<std::unique_ptr<ExprAST>> Args)
-        : Callee(Callee), Args(std::move(Args))
+    CallExprAST(const std::string &_callee, std::vector<std::unique_ptr<ExprAST>> _args)
+        : Callee(_callee), Args(std::move(_args))
     {}
 
     llvm::Value *codegen(CodeModule &code_module) override;
@@ -92,8 +91,8 @@ class IfExprAST : public ExprAST
     std::unique_ptr<ExprAST> Cond, Then, Else;
 
   public:
-    IfExprAST(std::unique_ptr<ExprAST> Cond, std::unique_ptr<ExprAST> Then, std::unique_ptr<ExprAST> Else)
-        : Cond(std::move(Cond)), Then(std::move(Then)), Else(std::move(Else))
+    IfExprAST(std::unique_ptr<ExprAST> _cond, std::unique_ptr<ExprAST> _then, std::unique_ptr<ExprAST> _else)
+        : Cond(std::move(_cond)), Then(std::move(_then)), Else(std::move(_else))
     {}
 
     llvm::Value *codegen(CodeModule &code_module) override;
@@ -106,12 +105,13 @@ class ForExprAST : public ExprAST
     std::unique_ptr<ExprAST> Start, End, Step, Body;
 
   public:
-    ForExprAST(const std::string &VarName,
-        std::unique_ptr<ExprAST> Start,
-        std::unique_ptr<ExprAST> End,
-        std::unique_ptr<ExprAST> Step,
-        std::unique_ptr<ExprAST> Body)
-        : VarName(VarName), Start(std::move(Start)), End(std::move(End)), Step(std::move(Step)), Body(std::move(Body))
+    ForExprAST(const std::string &_varName,
+        std::unique_ptr<ExprAST> _start,
+        std::unique_ptr<ExprAST> _end,
+        std::unique_ptr<ExprAST> _step,
+        std::unique_ptr<ExprAST> _body)
+        : VarName(_varName), Start(std::move(_start)), End(std::move(_end)), Step(std::move(_step)),
+          Body(std::move(_body))
     {}
 
     llvm::Value *codegen(CodeModule &code_module) override;
@@ -124,8 +124,8 @@ class VarExprAST : public ExprAST
     std::unique_ptr<ExprAST> Body;
 
   public:
-    VarExprAST(std::vector<std::pair<std::string, std::unique_ptr<ExprAST>>> VarNames, std::unique_ptr<ExprAST> Body)
-        : VarNames(std::move(VarNames)), Body(std::move(Body))
+    VarExprAST(std::vector<std::pair<std::string, std::unique_ptr<ExprAST>>> _varNames, std::unique_ptr<ExprAST> _body)
+        : VarNames(std::move(_varNames)), Body(std::move(_body))
     {}
 
     llvm::Value *codegen(CodeModule &code_module) override;
@@ -142,8 +142,8 @@ class PrototypeAST : public FnAST
     uint32_t Precedence;// Precedence if a binary op.
 
   public:
-    PrototypeAST(const std::string &Name, std::vector<std::string> Args, bool IsOperator = false, unsigned Prec = 0)
-        : Name(Name), Args(std::move(Args)), IsOperator(IsOperator), Precedence(Prec)
+    PrototypeAST(const std::string &name, std::vector<std::string> args, bool isOperator = false, unsigned prec = 0)
+        : Name(name), Args(std::move(args)), IsOperator(isOperator), Precedence(prec)
     {}
 
     llvm::Function *codegen(CodeModule &code_module);
@@ -168,8 +168,8 @@ class FunctionAST : public FnAST
     std::unique_ptr<ExprAST> Body;
 
   public:
-    FunctionAST(std::unique_ptr<PrototypeAST> Proto, std::unique_ptr<ExprAST> Body)
-        : Proto(std::move(Proto)), Body(std::move(Body))
+    FunctionAST(std::unique_ptr<PrototypeAST> proto, std::unique_ptr<ExprAST> body)
+        : Proto(std::move(proto)), Body(std::move(body))
     {}
 
     llvm::Function *codegen(CodeModule &code_module);

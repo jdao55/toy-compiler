@@ -131,7 +131,7 @@ static int gettok()
 // Abstract Syntax Tree (aka Parse Tree)
 //===----------------------------------------------------------------------===//
 
-namespace Toy_Compiler {
+namespace {
 
 /// ExprAST - Base class for all expression nodes.
 class ExprAST
@@ -294,7 +294,7 @@ class FunctionAST
     Function *codegen();
 };
 
-}// namespace Toy_Compiler
+}// end anonymous namespace
 
 //===----------------------------------------------------------------------===//
 // Parser

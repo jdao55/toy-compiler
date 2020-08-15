@@ -18,7 +18,7 @@
 "="                     return tok_equal ;
 "=="                    return tok_binop ;
 "!="                    return tok_binop;
-[<>*+\-/]               return tok_binop;;
+[!<>*+\-/]              return tok_binop;;
 "<="                    return tok_binop;
 ">="                    return tok_binop;
 "("                     return tok_leftbracket;

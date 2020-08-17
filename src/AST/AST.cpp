@@ -1,10 +1,11 @@
 #include "llvm/IR/Verifier.h"
 #include "AST.hpp"
 #include "../misc/util.hpp"
+#include <fmt/format.h>
 
 std::map<std::string, uint32_t> BinopPrecedence{ { "<", 10 }, { "+", 20 }, { "-", 20 }, { "*", 40 } };
 
-llvm::Value *LogErrorV(const char *Str) { return util::logError<llvm::Value *>(Str); }
+llvm::Value *LogErrorV(std::string_view Str) { return util::logError<llvm::Value *>(Str); }
 
 llvm::Function *getFunction(std::string Name, CodeModule &code_module)
 {
@@ -37,7 +38,7 @@ llvm::Value *VariableExprAST::codegen(CodeModule &code_module)
 {
     // Look this variable up in the function.
     llvm::Value *V = code_module.NamedValues[Name];
-    if (!V) return LogErrorV("Unknown variable name");
+    if (!V) return LogErrorV(fmt::format("Unknown variable name: {}", Name));
 
     // Load the value.
     return code_module.Builder.CreateLoad(V, Name.c_str());

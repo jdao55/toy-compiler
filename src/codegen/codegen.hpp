@@ -1,47 +1,47 @@
-#ifndef CODE_GEN_HPP
-#define CODE_GEN_HPP
-//#include "../parser/ToyParser.hpp"
-#include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/LegacyPassManager.h"
-#include "llvm/IR/Module.h"
+#ifndef __CODEGEN_H_
+#define __CODEGEN_H_
+
 #include <memory>
-//#include "../AST/AST.hpp"
+#include <variant>
+#include <fmt/format.h>
+#include "codemodule.hpp"
+#include "../AST/AST.hpp"
 
-
-class PrototypeAST;
-struct CodeModule
+// helper type for the visitor #4
+template<class... Ts> struct overloaded : Ts...
 {
-    llvm::LLVMContext TheContext;
-    llvm::IRBuilder<> Builder;
-    std::unique_ptr<llvm::Module> TheModule;
-    std::map<std::string, llvm::AllocaInst *> NamedValues;
-    std::map<std::string, std::unique_ptr<PrototypeAST>> FunctionProtos;
-
-    CodeModule() : Builder(TheContext), TheModule(std::make_unique<llvm::Module>("Kaleoscope AOT ", TheContext)) {}
+    using Ts::operator()...;
 };
+// explicit deduction guide (not needed as of C++20)
+template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 
-// // helper type for the visitor #4
-// template<class... Ts> struct overloaded : Ts...
-// {
-//     using Ts::operator()...;
-// };
-// // explicit deduction guide (not needed as of C++20)
-// template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
-
-// CodeModule codegen(std::vector<std::variant<ExprAST_ptr, FnAST_ptr>> &top_expressions)
-// {
-//     CodeModule mod;
-//     for (auto &expr : top_expressions)
-//     {
-//         // 4. another type-matching visitor: a class with 3 overloaded operator()'s
-//         std::visit(overloaded{
-//                        [&mod](ExprAST &arg) { arg->codegen(mod); },
-//                        [&mod](FnAST &arg) { arg->codegen(mod); },
-//                    },
-//             expr);
-//     }
-//     return mod;
-// }
+using ExprAST_ptr = std::unique_ptr<ExprAST>;
+using FnAST_ptr = std::unique_ptr<FnAST>;
+std::unique_ptr<CodeModule> codegen(std::vector<std::variant<ExprAST_ptr, FnAST_ptr>> &top_expressions)
+{
+    auto mod = std::make_unique<CodeModule>();
+    for (auto &expr : top_expressions)
+    {
+        // if (auto vale = std::get_if<ExprAST_ptr>(&expr))
+        // {
+        //     fmt::print("a\n");
+        //     vale->codegen(*mod);
+        // }
+        // else
+        // {
+        //     auto valf = std::get<FnAST_ptr>(&expr);
+        //     fmt::print("b\n");
+        //     vafl->codegen(*mod);
+        // }
+        // // 4. another type-matching visitor: a class with 3 overloaded operator()'s
+        std::visit(overloaded{
+                       [&mod](ExprAST_ptr &arg) { arg->codegen(*mod); },
+                       [&mod](FnAST_ptr &arg) { arg->codegen(*mod); },
+                   },
+            expr);
+    }
+    return mod;
+}
 #endif
+// __CODEGEN_H_

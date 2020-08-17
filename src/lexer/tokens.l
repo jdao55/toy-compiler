@@ -15,6 +15,7 @@
 "if"                    return tok_if;
 "then"                  return tok_then;
 "else"                  return tok_else;
+"def"                   return tok_def;
 "="                     return tok_equal ;
 "=="                    return tok_binop ;
 "!="                    return tok_binop;

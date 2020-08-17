@@ -5,7 +5,7 @@
 #include <map>
 #include <variant>
 #include "../lexer/ToyLexer.hpp"
-#include "../codegen/codegen.hpp"
+#include "../codegen/codemodule.hpp"
 #include "../AST/AST.hpp"
 
 class ToyParser
@@ -346,11 +346,12 @@ class ToyParser
             break;
         }
 
-        if (lexer.current_token() != tok_rightbracket) return LogErrorP("Expected '(' in prototype");
+        if (lexer.current_token() != tok_leftbracket) return LogErrorP("Expected '(' in prototype");
 
         std::vector<std::string> ArgNames;
         while (lexer.next_token() == tok_identifier) ArgNames.push_back(lexer.current_token().text);
-        if (lexer.current_token() != tok_rightbracket) return LogErrorP("Expected ')' in prototype");
+        if (lexer.current_token() != tok_rightbracket)
+            return LogErrorP(fmt::format("Expected ')' in prototype got: {}", lexer.current_token().text));
 
         // success.
         lexer.next_token();// eat ')'.

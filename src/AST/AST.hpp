@@ -3,7 +3,7 @@
 
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Instructions.h"
-#include "../codegen/codegen.hpp"
+#include "../codegen/codemodule.hpp"
 
 extern std::map<std::string, uint32_t> BinopPrecedence;
 /// ExprAST - Base class for all expression nodes.

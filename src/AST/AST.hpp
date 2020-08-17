@@ -4,6 +4,8 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Instructions.h"
 #include "../codegen/codegen.hpp"
+
+extern std::map<std::string, uint32_t> BinopPrecedence;
 /// ExprAST - Base class for all expression nodes.
 class ExprAST
 {
@@ -142,11 +144,11 @@ class PrototypeAST : public FnAST
     uint32_t Precedence;// Precedence if a binary op.
 
   public:
-    PrototypeAST(const std::string &name, std::vector<std::string> args, bool isOperator = false, unsigned prec = 0)
+    PrototypeAST(const std::string &name, std::vector<std::string> args, bool isOperator = false, uint32_t prec = 0)
         : Name(name), Args(std::move(args)), IsOperator(isOperator), Precedence(prec)
     {}
 
-    llvm::Function *codegen(CodeModule &code_module);
+    llvm::Function *codegen(CodeModule &code_module) override;
     const std::string &getName() const { return Name; }
 
     bool isUnaryOp() const { return IsOperator && Args.size() == 1; }
@@ -172,7 +174,7 @@ class FunctionAST : public FnAST
         : Proto(std::move(proto)), Body(std::move(body))
     {}
 
-    llvm::Function *codegen(CodeModule &code_module);
+    llvm::Function *codegen(CodeModule &code_module) override;
 };
 
 #endif

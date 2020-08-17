@@ -2,9 +2,10 @@
 #include "AST.hpp"
 #include "../misc/util.hpp"
 
+std::map<std::string, uint32_t> BinopPrecedence{ { "<", 10 }, { "+", 20 }, { "-", 20 }, { "*", 40 } };
+
 llvm::Value *LogErrorV(const char *Str) { return util::logError<llvm::Value *>(Str); }
 
-static std::map<std::string, int> BinopPrecedence{ { "<", 10 }, { "+", 20 }, { "-", 20 }, { "*", 40 } };
 llvm::Function *getFunction(std::string Name, CodeModule &code_module)
 {
     // First, see if the function has already been added to the current module.

@@ -8,14 +8,12 @@
 #include "../codegen/codegen.hpp"
 #include "../AST/AST.hpp"
 
-std::map<std::string, int> BinopPrecedence{ { "<", 10 }, { "+", 20 }, { "-", 20 }, { "*", 40 } };
 class ToyParser
 {
 
   private:
     ToyLexer lexer;
-    /// BinopPrecedence - This holds the precedence for each binary operator that is
-    /// defined.
+
     using ExprAST_ptr = std::unique_ptr<ExprAST>;
     using FnAST_ptr = std::unique_ptr<FnAST>;
 

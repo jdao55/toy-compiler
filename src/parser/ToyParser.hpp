@@ -249,7 +249,7 @@ class ToyParser
             return ParsePrimary();
 
         // If this is a unary operator, read it.
-        int Opc = lexer.current_token().text;
+        int Opc = lexer.current_token().text[0];
         lexer.next_token();
         if (auto Operand = ParseUnary()) return std::make_unique<UnaryExprAST>(Opc, std::move(Operand));
         return nullptr;
@@ -269,7 +269,7 @@ class ToyParser
             if (TokPrec < ExprPrec) return LHS;
 
             // Okay, we know this is a binop.
-            int BinOp = lexer.current_token().text;
+            int BinOp = lexer.current_token().text[0];
             lexer.next_token();// eat binop
 
             // Parse the unary expression after the binary operator.

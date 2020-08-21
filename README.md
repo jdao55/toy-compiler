@@ -25,3 +25,15 @@ cmake ../
 ```
 make
 ```
+# Usage
+```
+Usage:
+  toycomp <filename> [--out=filename] [--opt=level]
+  toycomp (-h | --help)
+
+Options:
+  -h --help                       Show this screen.
+  -o filname --out=filename       Specify output object file name
+  -O level --opt=level            Specify optimization level [1,2,3])";
+```
+      

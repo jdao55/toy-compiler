@@ -76,5 +76,6 @@ Compile and link using gcc/clang
 - main function
 ## Compiler features
 - add optimization passes
+- add compilation targets
 - refactor main?
       

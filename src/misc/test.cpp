@@ -1,7 +1,9 @@
 #include "../lexer/ToyLexer.hpp"
 #include "../codegen/codegen.hpp"
 #include "../parser/ToyParser.hpp"
+#include "../argparser/argparser.hpp"
 #include <iostream>
+#include <fstream>
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/raw_ostream.h"
@@ -9,14 +11,20 @@
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
-int main()
+#include "llvm/IR/Module.h"
+int main(int argc, char **argv)
 {
+    auto args = std::get<Arguments>(get_args(argc, argv));
     ToyParser parser;
-    auto expr_vec = parser.MainLoop(std::cin);
+    std::ifstream src_stream(args.srcfilename);
+    auto expr_vec = parser.MainLoop(src_stream);
+    src_stream.close();
     auto mod = codegen(expr_vec);
-
+#ifndef NDEBUG
+    mod->TheModule->print(llvm::errs(), nullptr);
+#endif
     // Initialize the target registry etc.
-    llvm::InitializeAllTargetInfos();
+    llvm ::InitializeAllTargetInfos();
     llvm::InitializeAllTargets();
     llvm::InitializeAllTargetMCs();
     llvm::InitializeAllAsmParsers();
@@ -46,9 +54,8 @@ int main()
 
     mod->TheModule->setDataLayout(TheTargetMachine->createDataLayout());
 
-    auto Filename = "output.o";
     std::error_code EC;
-    llvm::raw_fd_ostream dest(Filename, EC, llvm::sys::fs::OF_None);
+    llvm::raw_fd_ostream dest(args.outfilename, EC, llvm::sys::fs::OF_None);
 
     if (EC)
     {
@@ -68,7 +75,7 @@ int main()
     pass.run(*(mod->TheModule));
     dest.flush();
 
-    llvm::outs() << "Wrote " << Filename << "\n";
+    llvm::outs() << "Wrote " << args.outfilename << "\n";
 
     return 0;
 }

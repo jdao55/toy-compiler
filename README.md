@@ -39,7 +39,7 @@ Options:
 ```
 # Example
 Kaleidoscope program test.toy
-```C
+```python
 def add(x y)
    x + y
 

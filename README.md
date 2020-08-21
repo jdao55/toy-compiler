@@ -1,5 +1,6 @@
 # toy-compiler
-A toy (Kaleidoscope) compiler based on llvm's guide https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/index.html
+A toy (Kaleidoscope) compiler based on llvm's guide https://llvm.org/docs/tutorial/MyFirstLanguageFrontend/index.html, 
+currently compiles to object files, which can be linked using clang/gcc
 
 # Building
 ## Dependencies
@@ -36,4 +37,44 @@ Options:
   -o filname --out=filename       Specify output object file name
   -O level --opt=level            Specify optimization level [1,2,3])";
 ```
+# Example
+Kaleidoscope program test.toy
+```C
+def add(x y)
+   x + y
+
+def add3(x y z)
+   x + y + z
+```
+Compile with toycompiler
+```toycompiler test.toy -out=add.o```
+
+## Calling Kaleidoscope from c++
+sample c++ program example.cpp
+```C++
+#include <iostream>
+extern "C" {
+  double add(double, double);
+  double add3(double, double, double);
+}
+int main()
+
+{
+  std::cout << add(1.2, 2.3) << std::endl;
+  std::cout << add3(1.0, 2.0, 3.0) << std::endl;
+}
+```
+Compile and link using gcc/clang
+```g++ example.cpp add.o -o example```
+# TODO
+## Language features
+- arrays
+- data types
+  - integers
+  - strings
+- arrays
+- main function
+## Compiler features
+- add optimization passes
+- refactor main?
       

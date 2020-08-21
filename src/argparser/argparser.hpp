@@ -15,7 +15,7 @@ struct Arguments
 };
 
 const char USAGE[] =
-    R"(Img Print.
+    R"(toy compiler
     Usage:
       toycomp <filename> [--out=filename] [--opt=level]
       toycomp (-h | --help)

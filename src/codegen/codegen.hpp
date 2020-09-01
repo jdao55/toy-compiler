@@ -35,6 +35,9 @@ inline std::unique_ptr<CodeModule> codegen(
     }
     return mod;
 }
+inline void optimize(llvm::Function *function);
+inline void optimize(llvm::Module *module);
+
 
 #endif
 // __CODEGEN_H_

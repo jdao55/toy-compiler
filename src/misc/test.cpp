@@ -20,7 +20,10 @@ int main(int argc, char **argv)
     auto expr_vec = parser.MainLoop(src_stream);
     src_stream.close();
     auto mod = codegen(expr_vec);
-#ifndef NDEBUG
+    // run optimzer on module
+    mod->opt_mananger->optimize(mod->TheModule.get());
+
+#ifndef NDEBUG// print llvmIR in debug
     mod->TheModule->print(llvm::errs(), nullptr);
 #endif
     // Initialize the target registry etc.

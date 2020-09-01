@@ -3,19 +3,24 @@
 #include "../misc/util.hpp"
 #include <fmt/format.h>
 
-std::map<std::string, uint32_t> BinopPrecedence{ { "<", 10 }, { "+", 20 }, { "-", 20 }, { "*", 40 } };
+std::map<std::string, uint32_t> BinopPrecedence{ { "<", 10 },
+    { "+", 20 },
+    { "-", 20 },
+    { "*", 40 } };
 
 llvm::Value *LogErrorV(std::string_view Str) { return util::logError<llvm::Value *>(Str); }
 
 llvm::Function *getFunction(std::string Name, CodeModule &code_module)
 {
     // First, see if the function has already been added to the current module.
-    if (auto *F = code_module.TheModule->getFunction(Name)) return F;
+    if (auto *F = code_module.TheModule->getFunction(Name))
+        return F;
 
     // If not, check whether we can codegen the declaration from some existing
     // prototype.
     auto FI = code_module.FunctionProtos.find(Name);
-    if (FI != code_module.FunctionProtos.end()) return FI->second->codegen(code_module);
+    if (FI != code_module.FunctionProtos.end())
+        return FI->second->codegen(code_module);
 
     // If no existing prototype exists, return null.
     return nullptr;
@@ -23,7 +28,9 @@ llvm::Function *getFunction(std::string Name, CodeModule &code_module)
 
 /// CreateEntryBlockAlloca - Create an alloca instruction in the entry block of
 /// the function.  This is used for mutable variables etc.
-llvm::AllocaInst *CreateEntryBlockAlloca(llvm::Function *TheFunction, llvm::StringRef VarName, CodeModule &code_module)
+llvm::AllocaInst *CreateEntryBlockAlloca(llvm::Function *TheFunction,
+    llvm::StringRef VarName,
+    CodeModule &code_module)
 {
     llvm::IRBuilder<> TmpB(&TheFunction->getEntryBlock(), TheFunction->getEntryBlock().begin());
     return TmpB.CreateAlloca(llvm::Type::getDoubleTy(code_module.TheContext), nullptr, VarName);
@@ -38,7 +45,8 @@ llvm::Value *VariableExprAST::codegen(CodeModule &code_module)
 {
     // Look this variable up in the function.
     llvm::Value *V = code_module.NamedValues[Name];
-    if (!V) return LogErrorV(fmt::format("Unknown variable name: {}", Name));
+    if (!V)
+        return LogErrorV(fmt::format("Unknown variable name: {}", Name));
 
     // Load the value.
     return code_module.Builder.CreateLoad(V, Name.c_str());
@@ -47,10 +55,12 @@ llvm::Value *VariableExprAST::codegen(CodeModule &code_module)
 llvm::Value *UnaryExprAST::codegen(CodeModule &code_module)
 {
     llvm::Value *OperandV = Operand->codegen(code_module);
-    if (!OperandV) return nullptr;
+    if (!OperandV)
+        return nullptr;
 
     llvm::Function *F = getFunction(std::string("unary") + Opcode, code_module);
-    if (!F) return LogErrorV("Unknown unary operator");
+    if (!F)
+        return LogErrorV("Unknown unary operator");
 
     return code_module.Builder.CreateCall(F, OperandV, "unop");
 }
@@ -65,14 +75,17 @@ llvm::Value *BinaryExprAST::codegen(CodeModule &code_module)
         // default.  If you build LLVM with RTTI this can be changed to a
         // dynamic_cast for automatic error checking.
         VariableExprAST *LHSE = static_cast<VariableExprAST *>(LHS.get());
-        if (!LHSE) return LogErrorV("destination of '=' must be a variable");
+        if (!LHSE)
+            return LogErrorV("destination of '=' must be a variable");
         // Codegen the RHS.
         llvm::Value *Val = RHS->codegen(code_module);
-        if (!Val) return nullptr;
+        if (!Val)
+            return nullptr;
 
         // Look up the name.
         llvm::Value *Variable = code_module.NamedValues[LHSE->getName()];
-        if (!Variable) return LogErrorV("Unknown variable name");
+        if (!Variable)
+            return LogErrorV("Unknown variable name");
 
         code_module.Builder.CreateStore(Val, Variable);
         return Val;
@@ -80,7 +93,8 @@ llvm::Value *BinaryExprAST::codegen(CodeModule &code_module)
 
     llvm::Value *L = LHS->codegen(code_module);
     llvm::Value *R = RHS->codegen(code_module);
-    if (!L || !R) return nullptr;
+    if (!L || !R)
+        return nullptr;
 
     switch (Op)
     {
@@ -93,7 +107,8 @@ llvm::Value *BinaryExprAST::codegen(CodeModule &code_module)
     case '<':
         L = code_module.Builder.CreateFCmpULT(L, R, "cmptmp");
         // Convert bool 0/1 to double 0.0 or 1.0
-        return code_module.Builder.CreateUIToFP(L, llvm::Type::getDoubleTy(code_module.TheContext), "booltmp");
+        return code_module.Builder.CreateUIToFP(
+            L, llvm::Type::getDoubleTy(code_module.TheContext), "booltmp");
     default:
         break;
     }
@@ -111,16 +126,19 @@ llvm::Value *CallExprAST::codegen(CodeModule &code_module)
 {
     // Look up the name in the global module table.
     llvm::Function *CalleeF = getFunction(Callee, code_module);
-    if (!CalleeF) return LogErrorV("Unknown function referenced");
+    if (!CalleeF)
+        return LogErrorV("Unknown function referenced");
 
     // If argument mismatch error.
-    if (CalleeF->arg_size() != Args.size()) return LogErrorV("Incorrect # arguments passed");
+    if (CalleeF->arg_size() != Args.size())
+        return LogErrorV("Incorrect # arguments passed");
 
     std::vector<llvm::Value *> ArgsV;
     for (size_t i = 0, e = Args.size(); i != e; ++i)
     {
         ArgsV.push_back(Args[i]->codegen(code_module));
-        if (!ArgsV.back()) return nullptr;
+        if (!ArgsV.back())
+            return nullptr;
     }
 
     return code_module.Builder.CreateCall(CalleeF, ArgsV, "calltmp");
@@ -129,7 +147,8 @@ llvm::Value *CallExprAST::codegen(CodeModule &code_module)
 llvm::Value *IfExprAST::codegen(CodeModule &code_module)
 {
     llvm::Value *CondV = Cond->codegen(code_module);
-    if (!CondV) return nullptr;
+    if (!CondV)
+        return nullptr;
 
     // Convert condition to a bool by comparing non-equal to 0.0.
     CondV = code_module.Builder.CreateFCmpONE(
@@ -139,7 +158,8 @@ llvm::Value *IfExprAST::codegen(CodeModule &code_module)
 
     // Create blocks for the then and else cases.  Insert the 'then' block at the
     // end of the function.
-    llvm::BasicBlock *ThenBB = llvm::BasicBlock::Create(code_module.TheContext, "then", TheFunction);
+    llvm::BasicBlock *ThenBB =
+        llvm::BasicBlock::Create(code_module.TheContext, "then", TheFunction);
     llvm::BasicBlock *ElseBB = llvm::BasicBlock::Create(code_module.TheContext, "else");
     llvm::BasicBlock *MergeBB = llvm::BasicBlock::Create(code_module.TheContext, "ifcont");
 
@@ -149,7 +169,8 @@ llvm::Value *IfExprAST::codegen(CodeModule &code_module)
     code_module.Builder.SetInsertPoint(ThenBB);
 
     llvm::Value *ThenV = Then->codegen(code_module);
-    if (!ThenV) return nullptr;
+    if (!ThenV)
+        return nullptr;
 
     code_module.Builder.CreateBr(MergeBB);
     // Codegen of 'Then' can change the current block, update ThenBB for the PHI.
@@ -160,7 +181,8 @@ llvm::Value *IfExprAST::codegen(CodeModule &code_module)
     code_module.Builder.SetInsertPoint(ElseBB);
 
     llvm::Value *ElseV = Else->codegen(code_module);
-    if (!ElseV) return nullptr;
+    if (!ElseV)
+        return nullptr;
 
     code_module.Builder.CreateBr(MergeBB);
     // Codegen of 'Else' can change the current block, update ElseBB for the PHI.
@@ -169,7 +191,8 @@ llvm::Value *IfExprAST::codegen(CodeModule &code_module)
     // Emit merge block.
     TheFunction->getBasicBlockList().push_back(MergeBB);
     code_module.Builder.SetInsertPoint(MergeBB);
-    llvm::PHINode *PN = code_module.Builder.CreatePHI(llvm::Type::getDoubleTy(code_module.TheContext), 2, "iftmp");
+    llvm::PHINode *PN =
+        code_module.Builder.CreatePHI(llvm::Type::getDoubleTy(code_module.TheContext), 2, "iftmp");
 
     PN->addIncoming(ThenV, ThenBB);
     PN->addIncoming(ElseV, ElseBB);
@@ -204,14 +227,16 @@ llvm::Value *ForExprAST::codegen(CodeModule &code_module)
 
     // Emit the start code first, without 'variable' in scope.
     llvm::Value *StartVal = Start->codegen(code_module);
-    if (!StartVal) return nullptr;
+    if (!StartVal)
+        return nullptr;
 
     // Store the value into the alloca.
     code_module.Builder.CreateStore(StartVal, Alloca);
 
     // Make the new basic block for the loop header, inserting after current
     // block.
-    llvm::BasicBlock *LoopBB = llvm::BasicBlock::Create(code_module.TheContext, "loop", TheFunction);
+    llvm::BasicBlock *LoopBB =
+        llvm::BasicBlock::Create(code_module.TheContext, "loop", TheFunction);
 
     // Insert an explicit fall through from the current block to the LoopBB.
     code_module.Builder.CreateBr(LoopBB);
@@ -227,14 +252,16 @@ llvm::Value *ForExprAST::codegen(CodeModule &code_module)
     // Emit the body of the loop.  This, like any other expr, can change the
     // current BB.  Note that we ignore the value computed by the body, but don't
     // allow an error.
-    if (!Body->codegen(code_module)) return nullptr;
+    if (!Body->codegen(code_module))
+        return nullptr;
 
     // Emit the step value.
     llvm::Value *StepVal = nullptr;
     if (Step)
     {
         StepVal = Step->codegen(code_module);
-        if (!StepVal) return nullptr;
+        if (!StepVal)
+            return nullptr;
     }
     else
     {
@@ -244,7 +271,8 @@ llvm::Value *ForExprAST::codegen(CodeModule &code_module)
 
     // Compute the end condition.
     llvm::Value *EndCond = End->codegen(code_module);
-    if (!EndCond) return nullptr;
+    if (!EndCond)
+        return nullptr;
 
     // Reload, increment, and restore the alloca.  This handles the case where
     // the body of the loop mutates the variable.
@@ -257,7 +285,8 @@ llvm::Value *ForExprAST::codegen(CodeModule &code_module)
         EndCond, llvm::ConstantFP::get(code_module.TheContext, llvm::APFloat(0.0)), "loopcond");
 
     // Create the "after loop" block and insert it.
-    llvm::BasicBlock *AfterBB = llvm::BasicBlock::Create(code_module.TheContext, "afterloop", TheFunction);
+    llvm::BasicBlock *AfterBB =
+        llvm::BasicBlock::Create(code_module.TheContext, "afterloop", TheFunction);
 
     // Insert the conditional branch into the end of LoopEndBB.
     code_module.Builder.CreateCondBr(EndCond, LoopBB, AfterBB);
@@ -296,7 +325,8 @@ llvm::Value *VarExprAST::codegen(CodeModule &code_module)
         if (Init)
         {
             InitVal = Init->codegen(code_module);
-            if (!InitVal) return nullptr;
+            if (!InitVal)
+                return nullptr;
         }
         else
         {// If not specified, use 0.0.
@@ -316,10 +346,12 @@ llvm::Value *VarExprAST::codegen(CodeModule &code_module)
 
     // Codegen the body, now that all vars are in scope.
     llvm::Value *BodyVal = Body->codegen(code_module);
-    if (!BodyVal) return nullptr;
+    if (!BodyVal)
+        return nullptr;
 
     // Pop all our variables from scope.
-    for (size_t i = 0, e = VarNames.size(); i != e; ++i) code_module.NamedValues[VarNames[i].first] = OldBindings[i];
+    for (size_t i = 0, e = VarNames.size(); i != e; ++i)
+        code_module.NamedValues[VarNames[i].first] = OldBindings[i];
 
     // Return the body computation.
     return BodyVal;
@@ -329,9 +361,11 @@ llvm::Function *PrototypeAST::codegen(CodeModule &code_module)
 {
     // Make the function type:  double(double,double) etc.
     std::vector<llvm::Type *> Doubles(Args.size(), llvm::Type::getDoubleTy(code_module.TheContext));
-    llvm::FunctionType *FT = llvm::FunctionType::get(llvm::Type::getDoubleTy(code_module.TheContext), Doubles, false);
+    llvm::FunctionType *FT =
+        llvm::FunctionType::get(llvm::Type::getDoubleTy(code_module.TheContext), Doubles, false);
 
-    llvm::Function *F = llvm::Function::Create(FT, llvm::Function::ExternalLinkage, Name, code_module.TheModule.get());
+    llvm::Function *F = llvm::Function::Create(
+        FT, llvm::Function::ExternalLinkage, Name, code_module.TheModule.get());
 
     // Set names for all arguments.
     unsigned Idx = 0;
@@ -347,10 +381,12 @@ llvm::Function *FunctionAST::codegen(CodeModule &code_module)
     auto &P = *Proto;
     code_module.FunctionProtos[Proto->getName()] = std::move(Proto);
     llvm::Function *TheFunction = getFunction(P.getName(), code_module);
-    if (!TheFunction) return nullptr;
+    if (!TheFunction)
+        return nullptr;
 
     // If this is an operator, install it.
-    if (P.isBinaryOp()) BinopPrecedence[P.getName()] = P.getBinaryPrecedence();
+    if (P.isBinaryOp())
+        BinopPrecedence[P.getName()] = P.getBinaryPrecedence();
 
     // Create a new basic block to start insertion into.
     llvm::BasicBlock *BB = llvm::BasicBlock::Create(code_module.TheContext, "entry", TheFunction);
@@ -378,12 +414,16 @@ llvm::Function *FunctionAST::codegen(CodeModule &code_module)
         // Validate the generated code, checking for consistency.
         llvm::verifyFunction(*TheFunction);
 
+        // Run FPM on fucntion
+        code_module.opt_mananger->optimize(TheFunction);
+
         return TheFunction;
     }
 
     // Error reading body, remove function.
     TheFunction->eraseFromParent();
 
-    if (P.isBinaryOp()) BinopPrecedence.erase(P.getName());
+    if (P.isBinaryOp())
+        BinopPrecedence.erase(P.getName());
     return nullptr;
 }

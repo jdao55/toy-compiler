@@ -75,7 +75,7 @@ Compile and link using gcc/clang
 - arrays
 - main function
 ## Compiler features
-- add optimization passes
+- add optimization passes [WIP](https://github.com/jdao55/toy-compiler/tree/optimizer)
 - add compilation targets
 - refactor main?
       

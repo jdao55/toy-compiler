@@ -108,7 +108,8 @@ class ToyParser
         auto Cond = ParseExpression();
         if (!Cond) return nullptr;
 
-        if (lexer.current_token() != tok_then) return LogError("expected then");
+        if (lexer.current_token() != tok_then)
+            return LogError(fmt::format("expected then got: {} ", lexer.current_token().text));
         lexer.next_token();// eat the then
 
         auto Then = ParseExpression();
@@ -217,10 +218,11 @@ class ToyParser
     ///   ::= varexpr
     std::unique_ptr<ExprAST> ParsePrimary()
     {
-        switch (lexer.current_token().type)
+        auto tok = lexer.current_token().type;
+        switch (tok)
         {
         default:
-            return LogError("unknown token when expecting an expression");
+            return LogError(fmt::format("unknown token :{} when expecting an expression", static_cast<int>(tok)));
         case tok_identifier:
             return ParseIdentifierExpr();
         case tok_number:
@@ -261,13 +263,13 @@ class ToyParser
         while (true)
         {
             int TokPrec = GetTokPrecedence();
-
             // If this is a binop that binds at least as tightly as the current binop,
             // consume it, otherwise we are done.
             if (TokPrec < ExprPrec) return LHS;
 
             // Okay, we know this is a binop.
             int BinOp = lexer.current_token().text[0];
+
             lexer.next_token();// eat binop
 
             // Parse the unary expression after the binary operator.

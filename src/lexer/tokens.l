@@ -10,6 +10,9 @@
 "binary"                return tok_binary;
 "unary"                 return tok_unary;
 "for"                   return tok_for;
+"f32"                   return tok_f32;
+"i32"                   return tok_i32;
+"u8"                    return tok_u8;
 "in"                    return tok_in;
 "extern"                return tok_extern;
 "if"                    return tok_if;
@@ -24,6 +27,8 @@
 ">="                    return tok_binop;
 "("                     return tok_leftbracket;
 ")"                     return tok_rightbracket;
+"["                     return toke_leftsqr;
+"]"                     return toke_rightsqr;
 ","                     return tok_comma;
 ";"                     return tok_semi;
 [a-zA-Z_][a-zA-Z0-9_]*  return tok_identifier;

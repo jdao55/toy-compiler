@@ -33,12 +33,18 @@ enum token_t {
     // brakets commas, and semis
     tok_leftbracket = -15,
     tok_rightbracket = -16,
+    tok_leftsqr = -23,
+    tok_rightsqr = -24,
     tok_comma = -17,
     tok_semi = -18,
 
     // operators
-    tok_binop = -19
+    tok_binop = -19,
 
+    // types
+    tok_u32 = -20,
+    tok_f32 = -21,
+    tok_u8 = -22,
 
 };
 

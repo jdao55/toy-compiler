@@ -19,7 +19,7 @@ int main(int argc, char **argv)
     std::ifstream src_stream(args.srcfilename);
     auto expr_vec = parser.MainLoop(src_stream);
     src_stream.close();
-    auto mod = codegen(expr_vec);
+    auto mod = codegen(expr_vec, args.opt_level);
     // run optimzer on module
     mod->opt_mananger->optimize(mod->TheModule.get());
 

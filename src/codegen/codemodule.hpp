@@ -14,13 +14,12 @@ class PrototypeAST;
 
 struct OptimzerManager
 {
-    OptimzerManager(llvm::Module *mod)
+    OptimzerManager(llvm::Module *mod, uint8_t optlvl)
         : fn_pass_manager(std::make_unique<llvm::legacy::FunctionPassManager>(mod)),
           mod_pass_manager(std::make_unique<llvm::legacy::PassManager>())
     {
         llvm::PassManagerBuilder pass_builder;
-        // TODO change opt level bassed on cli argument
-        pass_builder.OptLevel = 3;
+        pass_builder.OptLevel = optlvl <= 3 ? optlvl : 1;
         pass_builder.SizeLevel = 0;
         pass_builder.populateFunctionPassManager(*fn_pass_manager);
         pass_builder.populateModulePassManager(*mod_pass_manager);
@@ -39,10 +38,9 @@ struct CodeModule
     std::map<std::string, llvm::AllocaInst *> NamedValues;
     std::map<std::string, std::unique_ptr<PrototypeAST>> FunctionProtos;
 
-    CodeModule()
-        : Builder(TheContext),
-          TheModule(std::make_unique<llvm::Module>("Kaleoscope AOT ", TheContext)),
-          opt_mananger(std::make_unique<OptimzerManager>(TheModule.get()))
+    CodeModule(uint8_t opt_level = 1)
+        : Builder(TheContext), TheModule(std::make_unique<llvm::Module>("Kaleoscope AOT ", TheContext)),
+          opt_mananger(std::make_unique<OptimzerManager>(TheModule.get(), opt_level))
     {}
 };
 

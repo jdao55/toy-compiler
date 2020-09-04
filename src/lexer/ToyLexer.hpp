@@ -27,20 +27,8 @@ class ToyLexer
             return token(tok_eof);
     }
 
-    void scan_tokens()
-    {
-        tokenlist.clear();
-        yyFlexLexer lexer;
-        int t;
-        while ((t = lexer.yylex()) != 0)
-        {
-            std::optional<double> dval = std::nullopt;
-            if (t == token_t::tok_number) dval = std::stod(lexer.YYText());
-            tokenlist.emplace_back(static_cast<token_t>(t), lexer.YYText(), dval);
-        }
-        tok_iter = tokenlist.begin();
-    }
-    void scan_tokens(std::istream &is)
+    void scan_tokens(std::istream &is = std::cin)
+
     {
         tokenlist.clear();
         yyFlexLexer lexer;
@@ -48,12 +36,25 @@ class ToyLexer
         int t;
         while ((t = lexer.yylex()) != 0)
         {
-            std::optional<double> dval = std::nullopt;
-            if (t == token_t::tok_number) dval = std::stod(lexer.YYText());
-            tokenlist.emplace_back(static_cast<token_t>(t), lexer.YYText(), dval);
+            std::variant<double, int32_t, std::string> val =
+                [](token_t t, const std::string &str) -> std::variant<double, int32_t, std::string> {
+                switch (t)
+                {
+                case (token_t::tok_i32_literal):
+                    return std::stoi(str);
+                case (token_t::tok_f32_literal):
+                    return std::stod(str);
+                default:
+                    return str;
+                }
+            }(t, lexer.YYText());
+
+            // dval = std::stod(lexer.YYText());
+            tokenlist.emplace_back(static_cast<token_t>(t), val);
         }
         tok_iter = tokenlist.begin();
     }
+
     auto begin() { return tokenlist.begin(); }
     auto end() { return tokenlist.end(); }
     auto begin() const { return tokenlist.cbegin(); }

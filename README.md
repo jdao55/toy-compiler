@@ -69,13 +69,13 @@ Compile and link using gcc/clang
 # TODO
 ## Language features
 - arrays
-- data types
+- data types (WIP see [types-ext branch](https://github.com/jdao55/toy-compiler/tree/types-ext))
   - integers
   - strings
 - arrays
 - main function
 ## Compiler features
-- add optimization passes [WIP](https://github.com/jdao55/toy-compiler/tree/optimizer)
+- add optimization passes (WIP [see optimzer branch](https://github.com/jdao55/toy-compiler/tree/optimizer))
 - add compilation targets
 - refactor main?
       

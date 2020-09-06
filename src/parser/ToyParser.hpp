@@ -24,7 +24,7 @@ class ToyParser
     int GetTokPrecedence()
     {
         // Make sure it's a declared binop.
-        auto tok_prec = BinopPrecedence.find(lexer.current_token().text);
+        auto tok_prec = BinopPrecedence.find(lexer.current_token().get<std::string>());
         if (tok_prec != BinopPrecedence.end()) { return tok_prec->second; }
         return -1;
     }
@@ -45,7 +45,7 @@ class ToyParser
     /// numberexpr ::= number
     std::unique_ptr<ExprAST> ParseNumberExpr()
     {
-        auto Result = std::make_unique<NumberExprAST>(lexer.current_token().num_val.value());
+        auto Result = std::make_unique<NumberExprAST>(lexer.current_token().get<double>());
         lexer.next_token();// consume the number
         return Result;
     }
@@ -67,7 +67,7 @@ class ToyParser
     ///   ::= identifier '(' expression* ')'
     std::unique_ptr<ExprAST> ParseIdentifierExpr()
     {
-        std::string IdName = lexer.current_token().text;
+        std::string IdName = lexer.current_token().get<std::string>();
 
         lexer.next_token();// eat identifier.
 
@@ -109,7 +109,7 @@ class ToyParser
         if (!Cond) return nullptr;
 
         if (lexer.current_token() != tok_then)
-            return LogError(fmt::format("expected then got: {} ", lexer.current_token().text));
+            return LogError(fmt::format("expected then got: {} ", lexer.current_token().get<std::string>()));
         lexer.next_token();// eat the then
 
         auto Then = ParseExpression();
@@ -132,7 +132,7 @@ class ToyParser
 
         if (lexer.current_token() != tok_identifier) return LogError("expected identifier after for");
 
-        std::string IdName = lexer.current_token().text;
+        std::string IdName = lexer.current_token().get<std::string>();
         lexer.next_token();// eat identifier.
 
         if (lexer.current_token() != tok_equal) return LogError("expected '=' after for");
@@ -177,7 +177,7 @@ class ToyParser
 
         while (true)
         {
-            std::string Name = lexer.current_token().text;
+            std::string Name = lexer.current_token().get<std::string>();
             lexer.next_token();// eat identifier.
 
             // Read the optional initializer.
@@ -225,7 +225,8 @@ class ToyParser
             return LogError(fmt::format("unknown token :{} when expecting an expression", static_cast<int>(tok)));
         case tok_identifier:
             return ParseIdentifierExpr();
-        case tok_number:
+        case tok_i32_literal:
+        case tok_f32_literal:
             return ParseNumberExpr();
         case tok_leftbracket:
             return ParseParenExpr();
@@ -249,7 +250,7 @@ class ToyParser
             return ParsePrimary();
 
         // If this is a unary operator, read it.
-        int Opc = lexer.current_token().text[0];
+        int Opc = lexer.current_token().get<std::string>()[0];
         lexer.next_token();
         if (auto Operand = ParseUnary()) return std::make_unique<UnaryExprAST>(Opc, std::move(Operand));
         return nullptr;
@@ -268,7 +269,7 @@ class ToyParser
             if (TokPrec < ExprPrec) return LHS;
 
             // Okay, we know this is a binop.
-            int BinOp = lexer.current_token().text[0];
+            int BinOp = lexer.current_token().get<std::string>()[0];
 
             lexer.next_token();// eat binop
 
@@ -317,7 +318,7 @@ class ToyParser
         default:
             return LogErrorP("Expected function name in prototype");
         case tok_identifier:
-            FnName = lexer.current_token().text;
+            FnName = lexer.current_token().get<std::string>();
             Kind = 0;
             lexer.next_token();
             break;
@@ -325,7 +326,7 @@ class ToyParser
             lexer.next_token();
             if (lexer.current_token() != token_t::tok_binop) return LogErrorP("Expected unary operator");
             FnName = "unary";
-            FnName += lexer.current_token().text;
+            FnName += lexer.current_token().get<std::string>();
             Kind = 1;
             lexer.next_token();
             break;
@@ -333,14 +334,14 @@ class ToyParser
             lexer.next_token();
             if (lexer.current_token() != token_t::tok_binop) return LogErrorP("Expected binary operator");
             FnName = "binary";
-            FnName += lexer.current_token().text;
+            FnName += lexer.current_token().get<std::string>();
             Kind = 2;
             lexer.next_token();
 
             // Read the precedence if present.
-            if (lexer.current_token() == tok_number)
+            if (lexer.current_token() == tok_i32_literal || lexer.current_token() == tok_f32_literal)
             {
-                auto NumVal = lexer.current_token().num_val.value();
+                auto NumVal = lexer.current_token().get<double>();
                 if (NumVal < 1 || NumVal > 100) return LogErrorP("Invalid precedence: must be 1..100");
                 BinaryPrecedence = static_cast<unsigned>(NumVal);
                 lexer.next_token();
@@ -351,9 +352,10 @@ class ToyParser
         if (lexer.current_token() != tok_leftbracket) return LogErrorP("Expected '(' in prototype");
 
         std::vector<std::string> ArgNames;
-        while (lexer.next_token() == tok_identifier) ArgNames.push_back(lexer.current_token().text);
+        while (lexer.next_token() == tok_identifier) ArgNames.push_back(lexer.current_token().get<std::string>());
         if (lexer.current_token() != tok_rightbracket)
-            return LogErrorP(fmt::format("Expected ')' in prototype got: {}", lexer.current_token().text));
+            return LogErrorP(
+                fmt::format("Expected ')' in prototype got: {}", lexer.current_token().get<std::string>()));
 
         // success.
         lexer.next_token();// eat ')'.

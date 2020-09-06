@@ -19,6 +19,7 @@
 "then"                  return tok_then;
 "else"                  return tok_else;
 "def"                   return tok_def;
+"var"                   return tok_var;
 "="                     return tok_equal ;
 "=="                    return tok_binop ;
 "!="                    return tok_binop;
@@ -27,12 +28,13 @@
 ">="                    return tok_binop;
 "("                     return tok_leftbracket;
 ")"                     return tok_rightbracket;
-"["                     return toke_leftsqr;
-"]"                     return toke_rightsqr;
+"["                     return tok_leftsqr;
+"]"                     return tok_rightsqr;
 ","                     return tok_comma;
 ";"                     return tok_semi;
 [a-zA-Z_][a-zA-Z0-9_]*  return tok_identifier;
-[0-9]+(\\.[0-9]*)?      return tok_number;
+[1-9][0-9]*             return tok_i32_literal;
+[0-9]+(\\.[0-9]*)?      return tok_f32_literal;
 "/*"                    BEGIN(COMMENT);
 \\#[^\n]*\n                   ;
 [ \t\n;]                 ;

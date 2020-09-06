@@ -37,17 +37,17 @@ class ToyLexer
         while ((t = lexer.yylex()) != 0)
         {
             std::variant<double, int32_t, std::string> val =
-                [](token_t t, const std::string &str) -> std::variant<double, int32_t, std::string> {
-                switch (t)
+                [&t, &lexer]() -> std::variant<double, int32_t, std::string> {
+                switch (static_cast<token_t>(t))
                 {
                 case (token_t::tok_i32_literal):
-                    return std::stoi(str);
+                    return std::stoi(lexer.YYText());
                 case (token_t::tok_f32_literal):
-                    return std::stod(str);
+                    return std::stod(lexer.YYText());
                 default:
-                    return str;
+                    return lexer.YYText();
                 }
-            }(t, lexer.YYText());
+            }();
 
             // dval = std::stod(lexer.YYText());
             tokenlist.emplace_back(static_cast<token_t>(t), val);

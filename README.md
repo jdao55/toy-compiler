@@ -72,7 +72,6 @@ Compile and link using gcc/clang
 - data types (WIP see [types-ext branch](https://github.com/jdao55/toy-compiler/tree/types-ext))
   - integers
   - strings
-- arrays
 - main function
 ## Compiler features
 - add optimization passes (WIP [see optimzer branch](https://github.com/jdao55/toy-compiler/tree/optimizer))
